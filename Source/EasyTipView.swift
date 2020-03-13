@@ -204,6 +204,22 @@ open class EasyTipView: UIView {
         
         static let allValues = [top, bottom, right, left]
     }
+
+    public struct GradientColor {
+
+        public enum GradientDirection {
+            case leftToRight(startColor: UIColor, endColor: UIColor)
+            case topToBottom(startColor: UIColor, endColor: UIColor)
+        }
+
+        let colorLocations: [CGFloat]
+        let gradientDirection: GradientDirection
+
+        public init(gradientDirection: GradientDirection, colorLocations: [CGFloat] = [0.0, 1.0]) {
+            self.gradientDirection = gradientDirection
+            self.colorLocations = colorLocations
+        }
+    }
     
     public struct Preferences {
         
@@ -222,6 +238,7 @@ open class EasyTipView: UIView {
             public var shadowOffset        = CGSize(width: 0.0, height: 0.0)
             public var shadowRadius        = CGFloat(0)
             public var shadowOpacity       = CGFloat(0)
+            public var linearGradientColor : GradientColor?
         }
         
         public struct Positioning {
@@ -590,8 +607,19 @@ open class EasyTipView: UIView {
     }
     
     fileprivate func paintBubble(_ context: CGContext) {
-        context.setFillColor(preferences.drawing.backgroundColor.cgColor)
-        context.fill(bounds)
+        if let gradientColor = preferences.drawing.linearGradientColor {
+            switch gradientColor.gradientDirection {
+            case .leftToRight(startColor: let startColor, endColor: let endColor):
+                let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [startColor.cgColor, endColor.cgColor] as CFArray, locations: gradientColor.colorLocations)!
+                context.drawLinearGradient(gradient, start: CGPoint.zero, end: CGPoint(x: bounds.width, y: 0), options: [])
+            case .topToBottom(startColor: let startColor, endColor: let endColor):
+                let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [startColor.cgColor, endColor.cgColor] as CFArray, locations: gradientColor.colorLocations)!
+                context.drawLinearGradient(gradient, start: CGPoint.zero, end: CGPoint(x: 0, y: bounds.height), options: [])
+            }
+        } else {
+            context.setFillColor(preferences.drawing.backgroundColor.cgColor)
+            context.fill(bounds)
+        }
     }
     
     fileprivate func drawBorder(_ borderPath: CGPath, context: CGContext) {
